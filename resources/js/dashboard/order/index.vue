@@ -1,17 +1,24 @@
 <template>
     <div>
+        <loading :active.sync="isLoading"
+                 :can-cancel="true"
 
+                 :is-full-page="fullPage"></loading>
         <div v-if="is_load">
-            <ul >
-                <li v-for="url in urls"><span>{{ url.url }}</span></li>
+            <h4> {{ headerText }} <span class="badge badge-success">{{ todayCounts }}</span></h4>
+            <ul class="list-inline">
+                <li v-for="url in urls"><a :href="url.url">{{ url.url }} <span class="badge badge-info">{{ url.count }}</span>
+                </a>
+                    <a :href="'/web/orders/'+url.database_id" >查看详情</a>
+                </li>
             </ul>
             <form>
                 <div class="form-group">
-                    <label>Email address</label>
+                    <label>查询条件</label>
                     <select v-model="selectStatus" name="" id="" class="form-control">
                         <option value="1">查询当日订单</option>
                         <option value="2">查询当月订单数</option>
-                        <option value="3">查询一周订单数</option>
+                        <option value="3">查看上月订单数</option>
                         <option value="4">按范围时间查询订单数</option>
                     </select>
                 </div>
@@ -33,34 +40,63 @@
 </template>
 
 <script>
+// Import component
+import Loading from 'vue-loading-overlay';
+// Import stylesheet
+import 'vue-loading-overlay/dist/vue-loading.css';
+
 export default {
     name: "index",
     props: ['country'],
+    components: {
+        Loading
+    },
     data() {
         return {
             is_load: false,
             selectStatus: 1,
             urls: {},
+            todayOrders: {},
+            todayCounts: 0,
+            isLoading: false,
+            fullPage: true,
+
         }
     },
     mounted() {
         axios.get('/api/admin/web', {
-            params: {country:this.country},
+            params: {country: this.country},
         }).then(response => {
-            this.urls = response.data;
+            this.todayCounts = response.data.counts;
+            this.urls = response.data.data;
             this.is_load = true;
 
         }).catch(error => {
 
         })
-    }, computed: {},
+    }, computed: {
+        headerText() {
+            switch (parseInt(this.selectStatus)) {
+                case 1:
+                    return '今日订单新增';
+                case 2:
+                    return '当月截至目前订单';
+                case 3:
+                    return '上月订单';
+            }
+        }
+    },
     methods: {
         async selectOrder() {
+            this.isLoading = true;
             let {data} = await axios.get('/api/admin/orders', {
                 params: {type: this.selectStatus, country: this.country}
             })
+            this.isLoading = false;
+            this.todayCounts = data.counts;
+            this.urls = data.data;
 
-            console.log(data);
+            console.log(data, this.selectStatus);
         }
     }
 }

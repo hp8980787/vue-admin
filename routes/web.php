@@ -16,3 +16,5 @@ Route::get('/',[\App\Http\Controllers\IndexController::class,'index']);
 Auth::routes();
 
 Route::get('/home', 'HomeController@index')->name('home');
+
+Route::get('web/orders/{id}',[\App\Http\Controllers\WebOrderDetailController::class,'show'])->name('orders.web');
